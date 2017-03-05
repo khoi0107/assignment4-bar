@@ -7,6 +7,7 @@ var client = new Client();
 
 var args = {};
 
+
 router.get('/', function (req, res, next) {
     res.json({message: "KHOI TRAN W1183067 BART"});
 

@@ -104,7 +104,7 @@
   			console.log(trainHeadStation)
   			$("#trip-table").append(tripPrint)
   			var sourcePos, desPos;
-  			$.get("/station?source="+source, function(data){
+  			$.get("/api/station?source="+source, function(data){
   				$(".source-box").empty()
   				var k = data.station_info[0]
   				var printSource = "<h1><strong>Source Station</strong></h1><p>Name: "+k.name[0] + "</p><p>Adresss: " +k.address[0] +"</p><p> City: "+k.city[0] +"</p>"  

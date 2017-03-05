@@ -4,12 +4,12 @@
 var subdomain = require('express-subdomain');
 var express = require('express');
 var bart = require('./routes/bartapi');
-
 var index = require('./routes/index');
+var homepage = require('./routes/homepage')
 
 var app = express();
 app.use(subdomain('bart', bart));
-app.use('/',index);
-//app.use('/api/',bart);
+app.use('/',homepage);
+app.use('/api/',bart);
 
 module.exports = app;

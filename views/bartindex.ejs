@@ -36,7 +36,7 @@
   	var diffsec
   	//var nexttripindex
   	$(document).ready(function(){
-  		$.get("/stations", function(data){
+  		$.get("/api/stations", function(data){
   			for (var i = 0; i< data.stations_info[0].station.length; i++) {
   				var t = data.stations_info[0].station
   				$("#source-stations").append("<option value="+t[i].abbr[0]+">"+t[i].name[0]+"</option")
@@ -86,7 +86,7 @@
   			
   			var source = $("#source-stations").val();
   			var dest = $("#dest-stations").val();
-  			$.get("/trips?source="+source+"&dest="+dest, function(data){
+  			$.get("/api/trips?source="+source+"&dest="+dest, function(data){
   			var tripPrint = "<h1>Available Scheduled Trips</h1> <p></p><div id=\"countdown-nexttrip\"></div> <div id=\"map\"> </div>"
   			for ( var i = 0; i < data.trips_info[0].request[0].trip.length;i++) {
   				var t = data.trips_info[0].request[0].trip[i]
@@ -120,7 +120,7 @@
 
   		
   			})
-  			$.get("/etdstation?source="+source, function(data){
+  			$.get("/api/etdstation?source="+source, function(data){
   				var t = data.etdstation_info[0];
   				for ( var i = 0; i < t.etd.length; i++){
   					if (trainHeadStation != undefined && trainHeadStation === t.etd[i].abbreviation[0]){

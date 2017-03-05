@@ -8,7 +8,7 @@ var index = require('./routes/index');
 var homepage = require('./routes/homepage')
 
 var app = express();
-app.use(subdomain('bart', bart));
+app.use(subdomain('bart', index));
 app.use('/',homepage);
 app.use('/api/',bart);
 

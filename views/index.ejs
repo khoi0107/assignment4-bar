@@ -1,11 +1,177 @@
 <!DOCTYPE html>
 <html>
   <head>
+
+  	<script   src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+  	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAXiPSdMsKJk9kezHcyhIqLegTVtawHnA" type="text/javascript"></script>
+
+
     <title><%= title %></title>
+
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   </head>
   <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
+  	<aside><div class="source-box"></div></aside> 
+  	
+  	<center>
+	  	<div id="welcome-back"></div>
+	  	
+	  	<section>
+	  		<h1>CHOOSE YOUR SOURCE AND DESTINATION</h1>
+	   		<select id="source-stations"></select>
+	   		<select id="dest-stations"></select>
+	   		<button type="button" onclick="gettrip()">Find Trip</button>
+	   	</section>
+	   	<div id="trip-table"></div>
+	<center>
   </body>
+  <footer>
+  	<p>Posted by: Khoi Tran</p>
+  	<p>Contact information: <a href="mailto:ktran@scu.edu">ktran@scu.edu</a></p>
+  </footer>
+
+  <script>
+  	var trainHeadStation
+  	var diffsec
+  	//var nexttripindex
+  	$(document).ready(function(){
+  		$.get("/api/stations", function(data){
+  			for (var i = 0; i< data.stations_info[0].station.length; i++) {
+  				var t = data.stations_info[0].station
+  				$("#source-stations").append("<option value="+t[i].abbr[0]+">"+t[i].name[0]+"</option")
+  				$("#dest-stations").append("<option value="+t[i].abbr[0]+">"+t[i].name[0]+"</option")
+  			}
+  		})
+  		if (localStorage.getItem("revisit") === null) {
+  			localStorage.setItem("revisit", 1)
+  			$("#welcome-back").empty();
+  			$("#welcome-back").append("<h1>WELCOME: THIS IS YOUR FIRST TIME USING BART API</h1>")
+		}
+		else{
+			var revisit = parseInt(localStorage.getItem("revisit"))
+			revisit = revisit +1
+			$("#welcome-back").empty();
+  			$("#welcome-back").append("<h1>WELCOME: THIS IS YOUR "+ revisit.toString()+" TIME USING BART API</h1>")
+  			localStorage.setItem("revisit", revisit)
+		}
+  	})	
+  	function gettrip(){
+		  	function initMap(s, d) {
+		        var directionsService = new google.maps.DirectionsService;
+		        var directionsDisplay = new google.maps.DirectionsRenderer;
+		        var map = new google.maps.Map(document.getElementById('map'), {
+		          zoom: 4,
+		          center: {lat: 37.722, lng: -122.177}
+		        });
+		        directionsDisplay.setMap(map);
+		        console.log(s +" "+ d)
+		        calculateAndDisplayRoute(directionsService, directionsDisplay, s, d)
+		      }
+
+		     function calculateAndDisplayRoute(directionsService, directionsDisplay, s, d) {
+		        directionsService.route({
+		          origin: s,
+		          destination: d,
+		          travelMode: 'TRANSIT'
+		        }, function(response, status) {
+		          if (status === 'OK') {
+		            directionsDisplay.setDirections(response);
+		          } else {
+		            window.alert('Directions request failed due to ' + status);
+		          }
+		        });
+		    }
+  			$("#trip-table").empty();
+  			
+  			var source = $("#source-stations").val();
+  			var dest = $("#dest-stations").val();
+  			$.get("/api/trips?source="+source+"&dest="+dest, function(data){
+  			var tripPrint = "<h1>Available Scheduled Trips</h1> <p></p><div id=\"countdown-nexttrip\"></div> <div id=\"map\"> </div>"
+  			for ( var i = 0; i < data.trips_info[0].request[0].trip.length;i++) {
+  				var t = data.trips_info[0].request[0].trip[i]
+  				console.log(t)
+
+  				var table = "<h2>Trip "+ i + ": $"+t.fares[0].fare[0].$.amount+"</h2>"
+  				table= table + "<table class=\"table table-hover\">  <tr>"
+  				for ( var j = 0; j < t.leg.length; j++) {
+  					table = table + "<td><p><strong>FROM:</strong> "+ t.leg[j].$.origin +"	"+t.leg[j].$.origTimeMin+"</p><p><strong>LINE: </strong>"+t.leg[j].$.line+"</><p><strong>TO:</strong> "+ t.leg[j].$.destination +"	"+t.leg[j].$.destTimeMin+ "</p></td>"
+  				}
+  				table = table + "</tr></table>"
+  				tripPrint+= table
+  			}
+  			trainHeadStation = data.trips_info[0].request[0].trip[0].leg[0].$.trainHeadStation
+  			console.log(trainHeadStation)
+  			$("#trip-table").append(tripPrint)
+  			var sourcePos, desPos;
+  			$.get("/api/station?source="+source, function(data){
+  				$(".source-box").empty()
+  				var k = data.station_info[0]
+  				var printSource = "<h1><strong>Source Station</strong></h1><p>Name: "+k.name[0] + "</p><p>Adresss: " +k.address[0] +"</p><p> City: "+k.city[0] +"</p>"  
+  				$(".source-box").append(printSource)
+  				sourcePos =  k.gtfs_latitude[0]+","+k.gtfs_longitude[0]
+  				$.get("/api/station?source="+dest, function(data){
+  				var l = data.station_info[0]
+  				desPos = l.gtfs_latitude[0]+","+l.gtfs_longitude[0]
+  				$("#map").empty()
+  				initMap(sourcePos,desPos)
+
+  				})
+
+  		
+  			})
+  			$.get("/api/etdstation?source="+source, function(data){
+  				var t = data.etdstation_info[0];
+  				for ( var i = 0; i < t.etd.length; i++){
+  					if (trainHeadStation != undefined && trainHeadStation === t.etd[i].abbreviation[0]){
+  						console.log(t.etd[i].estimate[0])
+  						console.log(t.etd[i].estimate[0].minutes[0])
+  						for (var j = 0; t.etd[i].estimate.length; j++){
+  							if (t.etd[i].estimate[j].minutes[0] != "Leaving") {
+  								diffsec = 60*t.etd[i].estimate[0].minutes[0]
+  								break
+  							}
+  						}
+  						$("#countdown-nexttrip").empty()
+  						$("#countdown-nexttrip").append("<h1>Next Real Trip departs in " + diffsec+" seconds </h1>")	
+  						break
+  					}
+
+  				}
+  				console.log(diffsec);
+  			})
+  			/*
+  			var now = new Date()
+  			var d = new Date();
+  			for ( var i = 0; i < data.trips_info[0].request[0].trip.length;i++) {
+  				var time = data.trips_info[0].request[0].trip[i].leg[0].$.origTimeMin.match(/(\d+)(?::(\d\d))?\s*(p?)/);
+  				d.setHours( parseInt(time[1]) + (time[3] ? 12 : 0) );
+  				d.setMinutes( parseInt(time[2]) || 0 );
+  				d.setSeconds(0)
+  				if ((d - now) > 0) {
+  					diffsec = (d-now)/1000
+  					nexttripindex = i
+  					$("#countdown-nexttrip").empty()
+  					$("#countdown-nexttrip").append("<h1>Next Trip "+nexttripindex+ " departs in " + diffsec+" seconds </h1>")	
+  					break;
+  				} 
+  			}*/
+  			
+
+  		})
+  	}
+  	setInterval(function countdown(){ gettrip()}, 300000)
+  	setInterval(function step1sec(){ 
+  		diffsec = diffsec -1
+  		$("#countdown-nexttrip").empty()
+  		if (diffsec <= 0) {
+  			diffsec = 0
+  			$("#countdown-nexttrip").append("<h1>Next Real Trip departured </h1>")
+  		} else {
+  			$("#countdown-nexttrip").append("<h1>Next Real Trip departs in " + diffsec+" seconds </h1>")	
+  		}
+
+  		
+  	}, 1000)
+  </script>	 
 </html>

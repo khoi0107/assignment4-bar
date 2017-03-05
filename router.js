@@ -8,9 +8,8 @@ var bart = require('./routes/bartapi');
 var index = require('./routes/index');
 
 var app = express();
-
-app.use('/',index);
 app.use(subdomain('bart', bart));
+app.use('/',index);
 //app.use('/api/',bart);
 
 module.exports = app;
